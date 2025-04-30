@@ -1,132 +1,59 @@
+import streamlit as st
 import random
-logo = r''' 
- _                                             
-| |                                            
-| |__   __ _ _ __   __ _ _ __ ___   __ _ _ __  
-| '_ \ / _` | '_ \ / _` | '_ ` _ \ / _` | '_ \ 
-| | | | (_| | | | | (_| | | | | | | (_| | | | |
-|_| |_|\__,_|_| |_|\__, |_| |_| |_|\__,_|_| |_|
-                    __/ |                      
-                   |___/    '''
-print(logo)
-print("Welcome to **CAN YOU GUESS THE HOME SWEET HOME MEMBER?**")
 
-# TODO-1: - Update the word list to use the 'word_list' from hangman_words.py
-word_list = [ "ramya", "praveen", "ishani", "siddharth", "nirved", "nidhin", "shruthi", "ragini", "sreedharan"]
+st.title("🏡 Hangman: Home Sweet Home Edition")
 
+# Initial setup
+word_list = ["Ramya", "Praveen", "Ishani", "Siddharth", "Nirved", "Nidhin", "Shruthi", "Ragini", "Sreedharan"]
+stages = ["🪦", "😵", "😰", "😐", "🙂", "😀", "😎"]
 
-stages = [r'''
-  +---+
-  |   |
-  O   |
- /|\  |
- / \  |
-      |
-=========
-''', r'''
-  +---+
-  |   |
-  O   |
- /|\  |
- /    |
-      |
-=========
-''', r'''
-  +---+
-  |   |
-  O   |
- /|\  |
-      |
-      |
-=========
-''', '''
-  +---+
-  |   |
-  O   |
- /|   |
-      |
-      |
-=========''', '''
-  +---+
-  |   |
-  O   |
-  |   |
-      |
-      |
-=========
-''', '''
-  +---+
-  |   |
-  O   |
-      |
-      |
-      |
-=========
-''', '''
-  +---+
-  |   |
-      |
-      |
-      |
-      |
-=========
-''']
+# Initialize session state
+if "chosen_word" not in st.session_state:
+    st.session_state.chosen_word = random.choice(word_list)
+    st.session_state.display = ["_" for _ in st.session_state.chosen_word]
+    st.session_state.lives = 6
+    st.session_state.correct_guesses = []
+    st.session_state.game_over = False
 
+# Display word
+st.markdown("### Word to guess:")
+st.write(" ".join(st.session_state.display))
 
-lives = 6
+# Input guess
+guess = st.text_input("Guess a letter:").lower()
 
-# TODO-3: - Import the logo from hangman_art.py and print it at the start of the game.
+if guess and not st.session_state.game_over:
+    if guess in st.session_state.correct_guesses:
+        st.warning(f"You already guessed '{guess}'. Try another letter.")
+    else:
+        st.session_state.correct_guesses.append(guess)
 
-chosen_word = random.choice(word_list)
-
-placeholder = ""
-word_length = len(chosen_word)
-for position in range(word_length):
-    placeholder += "_"
-print("Word to guess: " + " ".join(placeholder))
-
-game_over = False
-correct_letters = []
-
-while not game_over:
-
-    # TODO-6: - Update the code below to tell the user how many lives they have left.
-    print(f"****************************<???>/You have {lives} left.****************************")
-    guess = input("Guess a letter: ").lower()
-
-    # TODO-4: - If the user has entered a letter they've already guessed, print the letter and let them know.
-
-    display = []
-    if guess in correct_letters:
-        print(f"You have already guessed {guess} ")
-
-    for letter in chosen_word:
-        if letter == guess:
-            display.append(letter)
-            correct_letters.append(guess)
-        elif letter in correct_letters:
-            display.append(letter)
+        if guess in st.session_state.chosen_word.lower():
+            for idx, letter in enumerate(st.session_state.chosen_word):
+                if letter.lower() == guess:
+                    st.session_state.display[idx] = letter
         else:
-            display.append("_")
+            st.session_state.lives -= 1
+            st.error(f"'{guess}' is not in the word. You lost a life!")
 
-    print("Word to guess: " + " ".join(display))
+# Show game status
+st.markdown("### Current Status:")
+st.write(" ".join(st.session_state.display))
+st.write(f"Lives left: {st.session_state.lives}")
+st.write(stages[st.session_state.lives])
 
-    # TODO-5: - If the letter is not in the chosen_word, print out the letter and let them know it's not in the word.
-    #  e.g. You guessed d, that's not in the word. You lose a life.
+# Win/Lose logic
+if "_" not in st.session_state.display and not st.session_state.game_over:
+    st.balloons()
+    st.success("🎉 YOU WIN!")
+    st.session_state.game_over = True
 
-    if guess not in chosen_word:
-        lives -= 1
-        print(f"You guessed {guess}, that's not in the word. You lose a life.")
+if st.session_state.lives == 0 and not st.session_state.game_over:
+    st.error(f"💀 YOU LOSE! The word was: {st.session_state.chosen_word}")
+    st.session_state.game_over = True
 
-        if lives == 0:
-            game_over = True
-
-            # TODO 7: - Update the print statement below to give the user the correct word they were trying to guess.
-            print(f"*********************** IT WAS {chosen_word} !YOU LOSE**********************")
-
-    if "_" not in display:
-        game_over = True
-        print("****************************YOU WIN****************************")
-
-    # TODO-2: - Update the code below to use the stages List from the file hangman_art.py
-    print(stages[lives])
+# Restart button
+if st.session_state.game_over:
+    if st.button("🔄 Play Again"):
+        st.session_state.clear()
+        st.experimental_rerun()
